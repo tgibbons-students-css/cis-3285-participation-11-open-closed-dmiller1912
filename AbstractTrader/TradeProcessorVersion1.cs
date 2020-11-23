@@ -10,7 +10,7 @@ namespace AbstractTrader
 {
     public class TradeProcessorVersion1 : TradeProcessor
     {
-        protected override IEnumerable<string> ReadTradeData(Stream stream)
+        protected IEnumerable<string> ReadTradeData(Stream stream)
         {
             LogMessage("INFO: ReadTradeData version 1");
             var tradeData = new List<string>();
@@ -25,23 +25,15 @@ namespace AbstractTrader
             return tradeData;
         }
 
-        protected override IEnumerable<TradeRecord> ParseTrades(IEnumerable<string> tradeData)
+        protected void LogMessage(string message, params object[] args)
         {
-            LogMessage("INFO: ParseTrades version 1");
-            var trades = new List<TradeRecord>();
-            var lineCount = 1;
-            foreach (var line in tradeData)
+            Console.WriteLine(message, args);
+            // added for Request 408
+            using (StreamWriter logfile = File.AppendText("log.xml"))
             {
-                var fields = line.Split(new char[] { ',' });
-
-                var trade = MapTradeDataToTradeRecord(fields);
-
-                trades.Add(trade);
-
-                lineCount++;
+                logfile.WriteLine("<log>" + message + "</log>", args);
             }
 
-            return trades;
         }
 
         protected TradeRecord MapTradeDataToTradeRecord(string[] fields)
@@ -62,11 +54,20 @@ namespace AbstractTrader
             return trade;
         }
 
-        protected override void StoreTrades(IEnumerable<TradeRecord> trades)
+        protected void StoreTrades(IEnumerable<TradeRecord> trades)
         {
             LogMessage("INFO: Simulating database connection in StoreTrades");
             // Not really connecting to database in this sample
             LogMessage("INFO: {0} trades processed", trades.Count());
+        }
+
+        public void ProcessTrades(Stream stream)
+        //public void ProcessTrades(string url)
+        {
+            var lines = ReadTradeData(stream);
+            //var lines = ReadURLTradeData(url);
+            var trades = ParseTrades(lines);
+            StoreTrades(trades);
         }
 
     }
